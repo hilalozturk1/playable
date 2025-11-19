@@ -3,7 +3,7 @@ FROM node:18-alpine
 WORKDIR /usr/src/app
 
 COPY package*.json ./
-RUN npm install --production=false
+RUN npm install
 
 # Accept build arg to bake API URL into the build
 ARG NEXT_PUBLIC_API_URL
