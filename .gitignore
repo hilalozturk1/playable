@@ -1,0 +1,12 @@
+node_modules
+.env
+dist
+.next
+build
+.vscode
+.DS_Store
+coverage
+.env.example
+.env.backend
+.package-lock.json
+package-lock.json
