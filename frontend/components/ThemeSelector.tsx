@@ -11,6 +11,8 @@ export default function ThemeSelector() {
     { name: 'Green', value: 'green' as const, color: 'bg-green-500' },
     { name: 'Purple', value: 'purple' as const, color: 'bg-purple-500' },
     { name: 'Orange', value: 'orange' as const, color: 'bg-orange-500' },
+    { name: 'Black', value: 'black' as const, color: 'bg-gray-900' },
+    { name: 'White', value: 'white' as const, color: 'bg-white border border-gray-300' },
   ];
 
   const currentTheme = themes.find(t => t.value === theme);
@@ -32,7 +34,7 @@ export default function ThemeSelector() {
       {isOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)}></div>
-          <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-2xl border-4 border-gray-200 z-50 overflow-hidden">
+          <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-2xl border-4 border-gray-200 z-50 overflow-hidden">
             <div className="p-2">
               {themes.map((t) => (
                 <button
@@ -41,7 +43,7 @@ export default function ThemeSelector() {
                     setTheme(t.value);
                     setIsOpen(false);
                   }}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all ${
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-bold transition-all ${
                     theme === t.value
                       ? 'bg-gray-100 text-gray-900'
                       : 'text-gray-700 hover:bg-gray-50'

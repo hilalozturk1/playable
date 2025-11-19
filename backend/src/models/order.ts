@@ -1,32 +1,40 @@
-import mongoose from "mongoose";
+import { Schema, model, Types } from 'mongoose';
 
-const orderSchema = new mongoose.Schema(
+const orderItemSchema = new Schema(
   {
-    items: [
-      {
-        _id: String,
-        name: String,
-        quantity: Number,
-        price: Number,
-        image: String,
-      },
-    ],
-    total: Number,
+    productId: { type: Types.ObjectId, ref: 'Product', required: true },
+    name: String,
+    image: String,
+    price: Number,
+    quantity: Number,
+    lineTotal: Number,
+  },
+  { _id: false }
+);
+
+const orderSchema = new Schema(
+  {
+    userId: { type: Types.ObjectId, ref: 'User', required: true },
+    items: [orderItemSchema],
+    subTotal: Number,
+    taxTotal: Number,
+    shippingFee: Number,
+    grandTotal: Number,
     shippingAddress: {
       fullName: String,
       city: String,
       address: String,
-    },
-    payment: {
-      status: String,
-      transactionId: String,
+      phone: String,
+      notes: String,
     },
     status: {
       type: String,
-      default: "Processing",
+      enum: ['Hazırlanıyor', 'Kargoya Verildi', 'Teslim Edildi', 'İptal'],
+      default: 'Hazırlanıyor',
     },
+    estimatedDelivery: Date,
   },
   { timestamps: true }
 );
 
-export default mongoose.model("Order", orderSchema);
+export default model('Order', orderSchema);

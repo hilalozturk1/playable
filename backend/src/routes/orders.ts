@@ -1,70 +1,112 @@
 import { Router } from 'express';
 import Order from '../models/order';
-import { authMiddleware } from '../middleware/auth';
+import { authMiddleware, AuthRequest } from '../middleware/auth';
+import { Product } from '../models/product';
+
+const parseNumber = (value: string | undefined, fallback: number) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const TAX_RATE = parseNumber(process.env.ORDER_TAX_RATE, 0.18);
+const SHIPPING_FEE = parseNumber(process.env.ORDER_SHIPPING_FEE, 49);
+const FREE_SHIPPING_LIMIT = parseNumber(process.env.ORDER_FREE_SHIPPING_MIN, 750);
 
 const router = Router();
 
 // Create order (private)
-router.post('/', authMiddleware, async (req: any, res) => {
-  const userId = req.user.sub;
-  const { items, shippingAddress, total } = req.body;
+router.post('/', authMiddleware, async (req: AuthRequest, res) => {
+  const userId = req.user?.sub;
+  const { items = [], shippingAddress = {} } = req.body || {};
 
+  if (!userId) return res.status(401).json({ message: 'Missing user' });
   if (!Array.isArray(items) || items.length === 0) {
-    return res.status(400).json({ message: 'Order must include at least one item' });
-  }
-
-  // Normalize incoming items: accept { id, name, price, qty } or { productId, name, price, quantity }
-  const normalized = items.map((it: any) => {
-    const productId = it.productId || it.id;
-    const quantity = it.quantity || it.qty || it.q || 1;
-    return { productId, name: it.name || '', quantity, price: it.price || 0 };
-  });
-
-  // Basic validation: ensure productId present
-  for (const it of normalized) {
-    if (!it.productId) return res.status(400).json({ message: 'Each order item must include productId (or id)' });
+    return res.status(400).json({ message: 'Sipariş için en az bir ürün gerekli' });
   }
 
   try {
-    const order = await Order.create({ userId, items: normalized, shippingAddress, total });
+    const normalized = items.map((it: any) => ({
+      productId: it.productId || it.id || it._id,
+      quantity: Math.max(1, parseInt(it.quantity || it.qty || it.q || '1', 10)),
+    }));
+
+    if (normalized.some(it => !it.productId)) {
+      return res.status(400).json({ message: 'Her ürün için productId gereklidir' });
+    }
+
+    const productIds = normalized.map(it => it.productId);
+    const dbProducts = await Product.find({ _id: { $in: productIds } });
+
+    if (dbProducts.length !== normalized.length) {
+      return res.status(400).json({ message: 'Bazı ürünler bulunamadı veya satışta değil' });
+    }
+
+    const orderItems = normalized.map(it => {
+      const product = dbProducts.find(p => p._id.toString() === it.productId.toString());
+      if (!product) throw new Error('Product not found');
+      if (!product.isActive || product.stock <= 0) {
+        throw new Error(`${product.name} stokta yok veya satışta değil`);
+      }
+      const quantity = Math.min(it.quantity, product.stock);
+      if (quantity <= 0) {
+        throw new Error(`${product.name} için stok yetersiz`);
+      }
+      const lineTotal = Number((product.price * quantity).toFixed(2));
+      return {
+        productId: product._id,
+        name: product.name,
+        image: product.images?.[0] || '',
+        price: product.price,
+        quantity,
+        lineTotal,
+      };
+    });
+
+    const subTotal = Number(
+      orderItems.reduce((sum, it) => sum + (it.lineTotal || 0), 0).toFixed(2)
+    );
+    const taxTotal = Number((subTotal * TAX_RATE).toFixed(2));
+    const shippingFee =
+      subTotal >= FREE_SHIPPING_LIMIT ? 0 : Number(SHIPPING_FEE.toFixed(2));
+    const grandTotal = Number((subTotal + taxTotal + shippingFee).toFixed(2));
+    const estimatedDelivery = new Date();
+    estimatedDelivery.setDate(estimatedDelivery.getDate() + 5);
+
+    const order = await Order.create({
+      userId,
+      items: orderItems,
+      subTotal,
+      taxTotal,
+      shippingFee,
+      grandTotal,
+      shippingAddress,
+      status: 'Hazırlanıyor',
+      estimatedDelivery,
+    });
+
+    await Promise.all(
+      orderItems.map(item =>
+        Product.findByIdAndUpdate(item.productId, {
+          $inc: { stock: -item.quantity, ordersCount: item.quantity },
+        })
+      )
+    );
+
     res.json(order);
   } catch (err: any) {
     console.error('Order create failed', err);
-    res.status(500).json({ message: 'Failed to create order', error: err.message || err });
+    res
+      .status(500)
+      .json({ message: 'Sipariş oluşturulamadı', error: err.message || err });
   }
 });
 
 // List orders for user
-router.get('/my', authMiddleware, async (req: any, res) => {
-  const userId = req.user.sub;
+router.get('/my', authMiddleware, async (req: AuthRequest, res) => {
+  const userId = req.user?.sub;
+  if (!userId) return res.status(401).json({ message: 'Missing user' });
   const orders = await Order.find({ userId }).sort({ createdAt: -1 });
   res.json(orders);
 });
 
-
-router.post('/create', async (req, res) => {
-  try {
-    const { items, total, shippingAddress } = req.body;
-
-    // Dummy payment
-    const paymentResult = {
-      status: "success",
-      transactionId: "TX-" + Math.random().toString(36).substring(2),
-    };
-
-    // Create order in DB
-    const order = await Order.create({
-      items,
-      total,
-      shippingAddress,
-      payment: paymentResult,
-      status: "Processing",
-    });
-
-    res.json({ success: true, orderId: order._id });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Order creation failed" });
-  }
-});
 export default router;

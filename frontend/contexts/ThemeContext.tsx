@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-export type Theme = 'rose' | 'blue' | 'green' | 'purple' | 'orange';
+export type Theme = 'rose' | 'blue' | 'green' | 'purple' | 'orange' | 'black' | 'white';
 
 export interface ThemeColors {
   primary: string;
@@ -69,6 +69,28 @@ const themes: Record<Theme, ThemeColors> = {
     bgLight: 'orange-100',
     text: 'orange-900',
     border: 'orange-200',
+  },
+  black: {
+    primary: 'gray-900',
+    primaryDark: 'black',
+    primaryLight: 'gray-800',
+    secondary: 'gray-700',
+    accent: 'gray-600',
+    bg: 'gray-900',
+    bgLight: 'gray-800',
+    text: 'white',
+    border: 'gray-700',
+  },
+  white: {
+    primary: 'gray-200',
+    primaryDark: 'gray-400',
+    primaryLight: 'gray-100',
+    secondary: 'gray-300',
+    accent: 'gray-200',
+    bg: 'white',
+    bgLight: 'gray-50',
+    text: 'gray-900',
+    border: 'gray-200',
   },
 };
 

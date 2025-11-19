@@ -7,6 +7,8 @@ export default function ProductCard({ product, small }: any) {
   const [showModal, setShowModal] = useState(false);
   const [current, setCurrent] = useState(0);
   const isSmall = !!small;
+  const ratingValue = Number(product?.rating || 0);
+  const ratingCount = Number(product?.ratingCount || 0);
 
   const openImage = (e: React.MouseEvent) => {
     // prevent the Link navigation and open modal instead
@@ -17,8 +19,8 @@ export default function ProductCard({ product, small }: any) {
 
   return (
     <>
-      <Link href={`/products/${product._id}`} className={`block group bg-white rounded-2xl p-4 border-4 border-${colors.border} shadow-lg hover:shadow-2xl transition-all hover:border-${colors.primary}`}>
-        <div className={`${isSmall ? 'h-64' : 'h-80'} bg-gradient-to-br from-${colors.bgLight} to-${colors.bg} rounded-xl mb-4 flex items-center justify-center overflow-hidden relative border-2 border-${colors.border}`}>
+      <Link href={`/products/${product._id}`} className={`block group bg-white rounded-xl p-4 border-4 border-${colors.border} shadow-lg hover:shadow-2xl transition-all hover:border-${colors.primary}`}>
+        <div className={`${isSmall ? 'h-64' : 'h-80'} bg-${colors.bgLight} rounded-lg mb-4 flex items-center justify-center overflow-hidden relative border-2 border-${colors.border}`}>
           {product?.images && product.images.length > 0 ? (
             // display first image (supports data URLs or remote URLs)
             // eslint-disable-next-line @next/next/no-img-element
@@ -35,7 +37,12 @@ export default function ProductCard({ product, small }: any) {
         </div>
         <div className="px-2">
           <h3 className={`font-bold text-${colors.text} mb-2 text-lg group-hover:text-${colors.primaryDark}`}>{product.name}</h3>
-          <p className={`text-2xl font-bold text-${colors.primary}`}>${product.price}</p>
+          <div className="flex items-center text-xs text-yellow-500 mb-1">
+            <span>★</span>
+            <span className="ml-1 font-semibold text-gray-700">{ratingValue.toFixed(1)}</span>
+            <span className="ml-1 text-gray-400">({ratingCount})</span>
+          </div>
+          <p className={`text-2xl font-bold text-${colors.primary}`}>₺{Number(product.price || 0).toFixed(2)}</p>
         </div>
         {product?.images && product.images.length > 1 && (
           <div className="flex gap-2 mt-3 px-2">
@@ -46,7 +53,7 @@ export default function ProductCard({ product, small }: any) {
                 src={src} 
                 alt={`thumb-${i}`} 
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCurrent(i); setShowModal(true); }} 
-                className={`w-16 h-16 object-cover rounded-lg cursor-pointer border-2 border-${colors.border} hover:border-${colors.primary} transition-all shadow-md`} 
+                className={`w-16 h-16 object-cover rounded-md cursor-pointer border-2 border-${colors.border} hover:border-${colors.primary} transition-all shadow-md`} 
               />
             ))}
           </div>

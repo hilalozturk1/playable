@@ -125,10 +125,11 @@ export default function Layout({ children, title = 'Playable' }: any) {
         ))}
       </div>
 
-      <header className={`bg-gradient-to-r from-${colors.primaryLight} to-${colors.secondary} border-b-4 border-${colors.primaryDark} sticky top-0 z-30 backdrop-blur-sm shadow-lg`}>
+      <header className={`bg-${colors.primaryLight} border-b-4 border-${colors.primaryDark} sticky top-0 z-30 backdrop-blur-sm shadow-lg`}>
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-          <Link href="/" className="font-bold text-3xl tracking-tight text-white hover:opacity-90 drop-shadow-md">Anasayfa</Link>
-          <nav className="space-x-6 flex items-center">
+          <Link href="/" className="font-bold text-3xl tracking-tight text-white hover:opacity-90 drop-shadow-md">Playable</Link>
+          <nav className="space-x-6 flex items-center text-sm font-bold">
+            <Link href="/" className="text-white hover:opacity-90 px-3 py-1 rounded-lg hover:bg-white/20 transition-all">Anasayfa</Link>
             <ThemeSelector />
             {userEmail && (
               <>
@@ -158,7 +159,7 @@ export default function Layout({ children, title = 'Playable' }: any) {
         </div>
       </header>
       <main className="min-h-screen md:ml-64">{children}</main>
-      <footer className={`border-t-4 border-${colors.accent} bg-gradient-to-br from-${colors.primaryLight} to-${colors.secondary} mt-24 py-12 shadow-xl`}>
+      <footer className={`border-t-4 border-${colors.accent} bg-${colors.primaryLight} mt-24 py-12 shadow-xl`}>
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
             <div>

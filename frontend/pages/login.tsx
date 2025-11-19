@@ -25,8 +25,8 @@ export default function LoginPage() {
   };
 
   return (
-    <div className={`py-12 px-6 min-h-screen flex items-center justify-center bg-gradient-to-br from-${colors.bg} to-white`}>
-      <div className={`max-w-md w-full bg-white rounded-2xl p-8 shadow-xl border-4 border-${colors.border}`}>
+    <div className={`py-12 px-6 min-h-screen flex items-center justify-center bg-${colors.bg}`}>
+      <div className={`max-w-md w-full bg-white rounded-xl p-8 shadow-xl border-4 border-${colors.border}`}>
         <h1 className={`text-4xl md:text-5xl font-bold text-${colors.text} mb-2`}>Hoş Geldiniz</h1>
         <p className={`text-lg text-${colors.primaryDark} mb-8 font-semibold`}>Hesabınıza giriş yapın</p>
         <form onSubmit={submit} className="space-y-6">

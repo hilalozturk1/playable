@@ -2,8 +2,8 @@ import { ThemeColors } from '../contexts/ThemeContext';
 
 export function getThemeClasses(colors: ThemeColors) {
   return {
-    header: `bg-gradient-to-r from-${colors.primaryLight} to-${colors.secondary} border-b-4 border-${colors.primaryDark}`,
-    footer: `border-t-4 border-${colors.accent} bg-gradient-to-br from-${colors.primaryLight} to-${colors.secondary}`,
+    header: `bg-${colors.primaryLight} border-b-4 border-${colors.primaryDark}`,
+    footer: `border-t-4 border-${colors.accent} bg-${colors.primaryLight}`,
     button: `bg-${colors.primary} hover:bg-${colors.primaryDark} text-white`,
     buttonOutline: `border-2 border-${colors.primary} text-${colors.primaryDark} hover:bg-${colors.primaryLight} hover:text-white`,
     card: `border-4 border-${colors.border} bg-white`,

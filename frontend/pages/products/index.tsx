@@ -20,6 +20,17 @@ export default function ProductsPage() {
   const [categories, setCategories] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>((router.query.category as string) || '');
   const [searchQuery, setSearchQuery] = useState<string>((router.query.q as string) || '');
+  const [priceMin, setPriceMin] = useState<string>('');
+  const [priceMax, setPriceMax] = useState<string>('');
+  const [ratingFilter, setRatingFilter] = useState<number>(0);
+  const [sort, setSort] = useState<string>((router.query.sort as string) || 'newest');
+  const sortOptions = [
+    { value: 'newest', label: 'En Yeni' },
+    { value: 'price_asc', label: 'Fiyat (Artan)' },
+    { value: 'price_desc', label: 'Fiyat (Azalan)' },
+    { value: 'rating_desc', label: 'Puan (Yüksek)' },
+    { value: 'popular', label: 'En Popüler' },
+  ];
 
   useEffect(() => {
     // Load categories
@@ -31,26 +42,40 @@ export default function ProductsPage() {
   }, []);
 
   useEffect(() => {
-    const q = router.query.q as string || searchQuery;
-    const category = router.query.category as string || selectedCategory;
+    if (router.query.q !== undefined) {
+      setSearchQuery((router.query.q as string) || '');
+    }
+    if (router.query.category !== undefined) {
+      setSelectedCategory((router.query.category as string) || '');
+    }
+    if (router.query.sort !== undefined) {
+      setSort((router.query.sort as string) || 'newest');
+    }
+  }, [router.query.q, router.query.category, router.query.sort]);
+
+  useEffect(() => {
     const params = new URLSearchParams();
     params.append('page', page.toString());
     params.append('limit', '12');
-    if (q) params.append('q', q);
-    if (category) params.append('category', category);
-    
+    if (searchQuery) params.append('q', searchQuery);
+    if (selectedCategory) params.append('category', selectedCategory);
+    if (priceMin) params.append('min', priceMin);
+    if (priceMax) params.append('max', priceMax);
+    if (ratingFilter) params.append('rating', ratingFilter.toString());
+    if (sort) params.append('sort', sort);
+
     api.get(`/products?${params.toString()}`).then(r => {
       setProducts(r.data.products);
       setTotal(r.data.total || 0);
     }).catch(() => {});
-  }, [router.query, page, searchQuery, selectedCategory]);
+  }, [page, searchQuery, selectedCategory, priceMin, priceMax, ratingFilter, sort]);
 
   const handleCategoryClick = (cat: string) => {
     setSelectedCategory(cat === selectedCategory ? '' : cat);
     setPage(1);
     router.push({
       pathname: '/products',
-      query: { ...router.query, category: cat === selectedCategory ? '' : cat, page: 1 }
+      query: { ...router.query, category: cat === selectedCategory ? '' : cat, sort, page: 1 }
     });
   };
 
@@ -59,20 +84,33 @@ export default function ProductsPage() {
     setPage(1);
     router.push({
       pathname: '/products',
-      query: { ...router.query, q: searchQuery, page: 1 }
+      query: { ...router.query, q: searchQuery, sort, page: 1 }
+    });
+  };
+
+  const handleResetFilters = () => {
+    setSelectedCategory('');
+    setPriceMin('');
+    setPriceMax('');
+    setRatingFilter(0);
+    setSort('newest');
+    setPage(1);
+    router.push({
+      pathname: '/products',
+      query: searchQuery ? { q: searchQuery, page: 1 } : { page: 1 }
     });
   };
 
   return (
-    <div className={`py-10 px-6 bg-gradient-to-b from-${colors.bg} to-white`}>
+    <div className={`py-10 px-6 bg-${colors.bg}`}>
       <div className="max-w-7xl mx-auto">
-        <div className={`mb-10 bg-gradient-to-r from-${colors.primaryLight} to-${colors.secondary} rounded-2xl p-8 shadow-xl border-4 border-${colors.primaryDark}`}>
+        <div className={`mb-10 bg-${colors.primaryLight} rounded-xl p-8 shadow-xl border-4 border-${colors.primaryDark}`}>
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-3 drop-shadow-lg">Tüm Ürünler</h1>
           <p className={`text-lg text-white/90 font-bold`}>{total} ürün mevcut</p>
         </div>
 
         {/* Search and Filters */}
-        <div className={`mb-8 bg-white rounded-2xl p-6 shadow-lg border-4 border-${colors.border}`}>
+        <div className={`mb-8 bg-white rounded-xl p-6 shadow-lg border-4 border-${colors.border}`}>
           <form onSubmit={handleSearch} className="mb-6">
             <div className="flex gap-3">
               <input
@@ -122,11 +160,101 @@ export default function ProductsPage() {
               </div>
             </div>
           )}
+
+          <div className="grid lg:grid-cols-3 gap-4 mt-6">
+            <div>
+              <h4 className="text-sm font-bold text-gray-700 mb-2">Fiyat Aralığı (TL)</h4>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  value={priceMin}
+                  min={0}
+                  onChange={(e) => {
+                    setPriceMin(e.target.value);
+                    setPage(1);
+                  }}
+                  placeholder="Min"
+                  className={`w-full px-3 py-2 border-2 border-${colors.border} rounded-lg focus:ring-2 focus:ring-${colors.primary}`}
+                />
+                <input
+                  type="number"
+                  value={priceMax}
+                  min={0}
+                  onChange={(e) => {
+                    setPriceMax(e.target.value);
+                    setPage(1);
+                  }}
+                  placeholder="Maks"
+                  className={`w-full px-3 py-2 border-2 border-${colors.border} rounded-lg focus:ring-2 focus:ring-${colors.primary}`}
+                />
+              </div>
+            </div>
+            <div>
+              <h4 className="text-sm font-bold text-gray-700 mb-2">Puan</h4>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => {
+                    setRatingFilter(0);
+                    setPage(1);
+                  }}
+                  className={`px-4 py-2 rounded-full text-sm font-semibold border ${
+                    ratingFilter === 0 ? `bg-${colors.primary} text-white border-${colors.primaryDark}` : `border-${colors.border} text-${colors.primaryDark}`
+                  }`}
+                >
+                  Tümü
+                </button>
+                {[4, 3, 2, 1].map((value) => (
+                  <button
+                    key={value}
+                    onClick={() => {
+                      setRatingFilter(value);
+                      setPage(1);
+                    }}
+                    className={`px-4 py-2 rounded-full text-sm font-semibold border ${
+                      ratingFilter === value ? `bg-${colors.primary} text-white border-${colors.primaryDark}` : `border-${colors.border} text-${colors.primaryDark}`
+                    }`}
+                  >
+                    {value}+ Puan
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <h4 className="text-sm font-bold text-gray-700 mb-2">Sıralama</h4>
+              <select
+                value={sort}
+                onChange={(e) => {
+                  setSort(e.target.value);
+                  setPage(1);
+                  router.push({
+                    pathname: '/products',
+                    query: { ...router.query, sort: e.target.value, page: 1 }
+                  });
+                }}
+                className={`w-full px-4 py-3 border-2 border-${colors.border} rounded-lg focus:ring-2 focus:ring-${colors.primary}`}
+              >
+                {sortOptions.map(option => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="flex justify-end mt-6">
+            <button
+              onClick={handleResetFilters}
+              className="px-4 py-2 text-sm font-bold text-gray-600 border border-gray-200 rounded-full hover:bg-gray-50 transition"
+            >
+              Filtreleri Sıfırla
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8 mb-12">
           {products.length === 0 ? (
-            <div className={`col-span-full text-center py-12 bg-white rounded-2xl border-4 border-${colors.border}`}>
+            <div className={`col-span-full text-center py-12 bg-white rounded-xl border-4 border-${colors.border}`}>
               <p className={`text-lg text-${colors.primaryDark} font-bold`}>Ürün bulunamadı.</p>
             </div>
           ) : (

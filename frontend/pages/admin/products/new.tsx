@@ -59,8 +59,8 @@ export default function AdminNewProduct() {
   }
 
   return (
-    <div className={`py-12 px-6 bg-gradient-to-b from-${colors.bg} to-white`}>
-      <div className={`max-w-3xl mx-auto bg-white rounded-2xl p-8 shadow-xl border-4 border-${colors.border}`}>
+    <div className={`py-12 px-6 bg-${colors.bg}`}>
+      <div className={`max-w-3xl mx-auto bg-white rounded-xl p-8 shadow-xl border-4 border-${colors.border}`}>
         <h1 className={`text-4xl md:text-5xl font-bold text-${colors.text} mb-12`}>Yeni Ürün Oluştur</h1>
         <form onSubmit={submit} className="space-y-6">
           <div>

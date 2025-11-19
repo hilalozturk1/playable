@@ -38,9 +38,9 @@ export default function AdminProductsList() {
   };
 
   return (
-    <div className={`py-12 px-6 bg-gradient-to-b from-${colors.bg} to-white`}>
+    <div className={`py-12 px-6 bg-${colors.bg}`}>
       <div className="max-w-7xl mx-auto">
-        <div className={`flex justify-between items-center mb-12 bg-gradient-to-r from-${colors.primaryLight} to-${colors.secondary} rounded-2xl p-8 shadow-xl border-4 border-${colors.primaryDark}`}>
+        <div className={`flex justify-between items-center mb-12 bg-${colors.primaryLight} rounded-xl p-8 shadow-xl border-4 border-${colors.primaryDark}`}>
           <h1 className="text-4xl md:text-5xl font-bold text-white drop-shadow-lg">Admin - Ürünler</h1>
           <button 
             onClick={() => router.push('/admin/products/new')} 
@@ -50,14 +50,14 @@ export default function AdminProductsList() {
           </button>
         </div>
         {loading ? (
-          <div className={`text-center py-12 bg-white rounded-2xl border-4 border-${colors.border}`}>
+          <div className={`text-center py-12 bg-white rounded-xl border-4 border-${colors.border}`}>
             <div className={`text-lg text-${colors.primaryDark} font-bold`}>Ürünler yükleniyor...</div>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {products.map(p => (
-              <div key={p._id} className={`p-6 bg-white border-4 border-${colors.border} rounded-2xl hover:shadow-2xl transition-all shadow-lg`}>
-                <div className={`h-48 bg-gradient-to-br from-${colors.bgLight} to-${colors.bg} rounded-xl mb-4 overflow-hidden flex items-center justify-center border-2 border-${colors.border}`}>
+              <div key={p._id} className={`p-6 bg-white border-4 border-${colors.border} rounded-xl hover:shadow-2xl transition-all shadow-lg`}>
+                <div className={`h-48 bg-${colors.bgLight} rounded-xl mb-4 overflow-hidden flex items-center justify-center border-2 border-${colors.border}`}>
                   {p.images && p.images.length > 0 ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={p.images[0]} alt={p.name} className="w-full h-full object-cover" />

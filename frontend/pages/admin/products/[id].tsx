@@ -90,7 +90,7 @@ export default function AdminEditProduct() {
   }
 
   return (
-    <div className="py-12 px-6 bg-gradient-to-b from-rose-50 to-white">
+    <div className="py-12 px-6 bg-rose-50">
       <div className="max-w-3xl mx-auto">
         <h1 className="text-4xl md:text-5xl font-bold text-rose-900 mb-12 drop-shadow-md">Ürün Düzenle</h1>
         <form onSubmit={submit} className="space-y-6">

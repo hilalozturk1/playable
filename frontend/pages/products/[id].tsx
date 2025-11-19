@@ -1,5 +1,5 @@
 import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import api from '../../lib/api';
 import { useTheme } from '../../contexts/ThemeContext';
 
@@ -7,6 +7,10 @@ export default function ProductPage() {
   const router = useRouter();
   const { colors } = useTheme();
   const { id } = router.query;
+  const priceFormatter = useMemo(
+    () => new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }),
+    []
+  );
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const token = localStorage.getItem('token') || localStorage.getItem('userEmail');
@@ -14,10 +18,34 @@ export default function ProductPage() {
   }, []);
   const [product, setProduct] = useState<any>(null);
   const [qty, setQty] = useState<number>(1);
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState('');
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewError, setReviewError] = useState<string | null>(null);
+
+  const fetchProduct = async (productId: string) => {
+    try {
+      const res = await api.get(`/products/${productId}`);
+      setProduct(res.data);
+    } catch {
+      setProduct(null);
+    }
+  };
+
+  const fetchReviews = async (productId: string) => {
+    try {
+      const res = await api.get(`/products/${productId}/reviews`);
+      setReviews(res.data || []);
+    } catch {
+      setReviews([]);
+    }
+  };
 
   useEffect(() => {
-    if (!id) return;
-    api.get(`/products/${id}`).then(r => setProduct(r.data)).catch(() => {});
+    if (!id || Array.isArray(id)) return;
+    fetchProduct(id);
+    fetchReviews(id);
   }, [id]);
 
   const handleAddToCart = () => {
@@ -29,8 +57,17 @@ export default function ProductPage() {
       const existing = cart.find((it: any) => it.id === product._id);
       if (existing) {
         existing.qty = Math.min(999, existing.qty + q);
+        if (!existing.image && product.images?.length) {
+          existing.image = product.images[0];
+        }
       } else {
-        cart.push({ id: product._id, name: product.name, price: product.price, qty: q });
+        cart.push({
+          id: product._id,
+          name: product.name,
+          price: product.price,
+          qty: q,
+          image: product.images?.[0] || '',
+        });
       }
   localStorage.setItem('cart', JSON.stringify(cart));
   // dispatch a custom event so same-window components (header) can update immediately
@@ -44,6 +81,43 @@ export default function ProductPage() {
     }
   };
 
+  const handleReviewSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!id || Array.isArray(id)) return;
+    if (!reviewComment.trim()) {
+      setReviewError('Lütfen yorumunuzu yazın.');
+      return;
+    }
+    setReviewSubmitting(true);
+    setReviewError(null);
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        router.push('/login');
+        return;
+      }
+      await api.post(
+        `/products/${id}/reviews`,
+        { rating: reviewRating, comment: reviewComment },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setReviewComment('');
+      await fetchReviews(id);
+      await fetchProduct(id);
+      try {
+        window.dispatchEvent(
+          new CustomEvent('notify', {
+            detail: { type: 'success', message: 'Yorumunuz alındı. Teşekkürler!' },
+          })
+        );
+      } catch {}
+    } catch (err: any) {
+      setReviewError(err?.response?.data?.message || 'Yorum kaydedilemedi');
+    } finally {
+      setReviewSubmitting(false);
+    }
+  };
+
   if (!product) return (
     <div className="py-12 px-6">
       <div className="max-w-7xl mx-auto text-center">
@@ -53,7 +127,7 @@ export default function ProductPage() {
   );
 
   return (
-    <div className={`py-12 px-6 bg-gradient-to-b from-${colors.bg} to-white`}>
+    <div className={`py-12 px-6 bg-${colors.bg}`}>
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16">
           <div>
@@ -65,7 +139,15 @@ export default function ProductPage() {
           </div>
           <div className="flex flex-col justify-center">
             <h1 className={`text-4xl md:text-5xl font-bold text-${colors.text} mb-6`}>{product.name}</h1>
-            <div className={`text-4xl font-bold text-${colors.primary} mb-8`}>${product.price}</div>
+            <div className="flex items-center gap-3 mb-4">
+              <RatingStars value={product.rating || 0} />
+              <span className="text-sm text-gray-600">
+                {(product.rating || 0).toFixed(1)} / 5 ({product.ratingCount || 0} değerlendirme)
+              </span>
+            </div>
+            <div className={`text-4xl font-bold text-${colors.primary} mb-8`}>
+              {priceFormatter.format(product.price || 0)}
+            </div>
             {product.description && (
               <p className={`text-lg text-${colors.primaryDark} mb-8 font-semibold leading-relaxed`}>{product.description}</p>
             )}
@@ -85,6 +167,71 @@ export default function ProductPage() {
               </button>
             </div>
           </div>
+        </div>
+      </div>
+
+      <div className="mt-12 grid lg:grid-cols-2 gap-8">
+        <div className={`p-6 rounded-xl border-2 border-${colors.border} bg-white`}>
+          <h3 className={`text-2xl font-bold text-${colors.text} mb-4`}>Yorum Yaz</h3>
+          <p className="text-sm text-gray-500 mb-4">Ürünü kullandıysan, deneyimini diğer müşterilerle paylaş.</p>
+          <form onSubmit={handleReviewSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Puan</label>
+              <select
+                value={reviewRating}
+                onChange={(e) => setReviewRating(parseInt(e.target.value, 10))}
+                className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
+              >
+                {[5, 4, 3, 2, 1].map((value) => (
+                  <option key={value} value={value}>
+                    {value} - {value === 5 ? "Mükemmel" : value === 4 ? "Çok İyi" : value === 3 ? "İyi" : value === 2 ? "Ortalama" : "Zayıf"}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Yorumunuz</label>
+              <textarea
+                value={reviewComment}
+                onChange={(e) => setReviewComment(e.target.value)}
+                rows={4}
+                className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                placeholder="Ürün hakkındaki düşünceleriniz..."
+              />
+            </div>
+            {reviewError && <p className="text-sm text-red-600">{reviewError}</p>}
+            <button
+              type="submit"
+              disabled={reviewSubmitting}
+              className={`w-full px-6 py-3 bg-${colors.primary} text-white rounded-full font-bold hover:bg-${colors.primaryDark} disabled:opacity-50`}
+            >
+              {reviewSubmitting ? "Gönderiliyor..." : "Yorumu Gönder"}
+            </button>
+          </form>
+        </div>
+
+        <div className={`p-6 rounded-xl border-2 border-${colors.border} bg-white`}>
+          <h3 className={`text-2xl font-bold text-${colors.text} mb-4`}>Müşteri Yorumları</h3>
+          {reviews.length === 0 ? (
+            <p className="text-sm text-gray-500">Henüz yorum yok. İlk yorumu sen yaz!</p>
+          ) : (
+            <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
+              {reviews.map((review) => (
+                <div key={review._id} className={`p-4 rounded-lg border border-${colors.border} bg-${colors.bgLight}`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <p className="font-semibold text-gray-900">{review.userName || "Anonim"}</p>
+                      <p className="text-xs text-gray-500">
+                        {review.createdAt ? new Date(review.createdAt).toLocaleDateString("tr-TR") : ""}
+                      </p>
+                    </div>
+                    <RatingStars value={review.rating || 0} />
+                  </div>
+                  <p className="text-sm text-gray-700 whitespace-pre-line">{review.comment}</p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -161,5 +308,17 @@ function ImageGallery({ images, title }: { images: string[]; title: string }) {
         </div>
       )}
     </>
+  );
+}
+
+function RatingStars({ value }: { value: number }) {
+  return (
+    <div className="flex items-center gap-1 text-yellow-400">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <span key={star} className={star <= value ? 'text-yellow-400' : 'text-gray-300'}>
+          ★
+        </span>
+      ))}
+    </div>
   );
 }
