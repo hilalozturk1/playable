@@ -14,7 +14,8 @@ const orderItemSchema = new Schema(
 
 const orderSchema = new Schema(
   {
-    userId: { type: Types.ObjectId, ref: 'User', required: true },
+    userId: { type: Types.ObjectId, ref: 'User', required: false },
+    guestEmail: { type: String },
     items: [orderItemSchema],
     subTotal: Number,
     taxTotal: Number,

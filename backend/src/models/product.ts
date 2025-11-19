@@ -12,6 +12,7 @@ const ProductSchema = new Schema(
     ordersCount: { type: Number, default: 0 },
     stock: { type: Number, default: 0 },
     isActive: { type: Boolean, default: true },
+    createdAt: { type: Date, default: Date.now }
   },
   { timestamps: true }
 );

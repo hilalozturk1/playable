@@ -13,6 +13,7 @@ export default function AdminEditProduct() {
   const [images, setImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -63,6 +64,7 @@ export default function AdminEditProduct() {
     if (!(stock >= 0)) return tryNotify('error', 'Stock must be 0 or greater');
     if (images.length === 0) return tryNotify('error', 'Please add at least one image');
     try {
+      setSubmitting(true);
       const token = localStorage.getItem('token');
       const body = { name, description, price, stock, category, images } as any;
       await api.put(`/admin/products/${id}`, body, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
@@ -72,6 +74,7 @@ export default function AdminEditProduct() {
       console.error('Update product failed', err);
       try { window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: err?.response?.data?.message || 'Update failed' } })); } catch {}
     }
+    setSubmitting(false);
   };
 
   function tryNotify(type: 'success'|'error'|'info'|'warn', message: string) {
@@ -196,9 +199,10 @@ export default function AdminEditProduct() {
           <div className="flex gap-4 pt-4">
             <button 
               type="submit"
-              className="px-8 py-3 bg-rose-600 text-white rounded-full font-bold hover:bg-rose-700 transition-all shadow-lg hover:shadow-xl"
+              disabled={submitting || uploading}
+              className={`px-8 py-3 bg-rose-600 text-white rounded-full font-bold hover:bg-rose-700 transition-all shadow-lg hover:shadow-xl ${submitting || uploading ? 'opacity-60 cursor-not-allowed' : ''}`}
             >
-              Ürünü Güncelle
+              {submitting ? 'Güncelleniyor...' : (uploading ? 'Görseller yükleniyor...' : 'Ürünü Güncelle')}
             </button>
             <button 
               type="button"

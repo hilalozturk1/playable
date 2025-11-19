@@ -125,40 +125,60 @@ export default function Layout({ children, title = 'Playable' }: any) {
         ))}
       </div>
 
-      <header className={`bg-${colors.primaryLight} border-b-4 border-${colors.primaryDark} sticky top-0 z-30 backdrop-blur-sm shadow-lg`}>
-        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-          <Link href="/" className="font-bold text-3xl tracking-tight text-white hover:opacity-90 drop-shadow-md">Playable</Link>
-          <nav className="space-x-6 flex items-center text-sm font-bold">
-            <Link href="/" className="text-white hover:opacity-90 px-3 py-1 rounded-lg hover:bg-white/20 transition-all">Anasayfa</Link>
-            <ThemeSelector />
-            {userEmail && (
-              <>
-                <Link href="/products" className="text-white hover:opacity-90 font-bold text-sm px-3 py-1 rounded-lg hover:bg-white/20 transition-all">Ürünler</Link>
-                <Link href="/cart" className="text-white hover:opacity-90 font-bold text-sm relative px-3 py-1 rounded-lg hover:bg-white/20 transition-all">
-                  Sepet
-                  {cartCount > 0 && (
-                    <span className={`absolute -top-1 -right-1 bg-${colors.primaryDark} text-white text-xs rounded-full w-6 h-6 flex items-center justify-center font-bold border-2 border-white`}>{cartCount}</span>
-                  )}
-                </Link>
-                <Link href="/profile" className="text-white hover:opacity-90 font-bold text-sm px-3 py-1 rounded-lg hover:bg-white/20 transition-all">Profil</Link>
-                {isAdmin && <Link href="/admin/products/new" className="text-white hover:opacity-90 font-bold text-sm px-3 py-1 rounded-lg hover:bg-white/20 transition-all">Admin</Link>}
-              </>
-            )}
-            {userEmail ? (
-              <>
-                <span className="ml-4 text-sm text-white font-semibold bg-white/20 px-3 py-1 rounded-lg">{userEmail}</span>
-                <button onClick={handleLogout} className={`ml-4 px-5 py-2 text-sm font-bold text-${colors.primaryDark} bg-white rounded-full hover:opacity-90 shadow-md transition-all`}>Çıkış</button>
-              </>
-            ) : (
-              <>
-                <Link href="/login" className="text-white hover:opacity-90 font-bold text-sm px-4 py-2 rounded-lg hover:bg-white/20 transition-all">Giriş</Link>
-                <Link href="/register" className={`ml-2 px-5 py-2 text-sm font-bold text-${colors.primaryDark} bg-white rounded-full hover:opacity-90 shadow-md transition-all`}>Kayıt Ol</Link>
-              </>
-            )}
-          </nav>
-        </div>
-      </header>
-      <main className="min-h-screen md:ml-64">{children}</main>
+        {/* Hide main header on admin routes to avoid duplicate nav */}
+        {!router.pathname.startsWith('/admin') && (
+          <header className={`bg-${colors.primaryLight} border-b-4 border-${colors.primaryDark} sticky top-0 z-30 backdrop-blur-sm shadow-lg`}>
+            <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+              <Link href="/" className="font-bold text-3xl tracking-tight text-white hover:opacity-90 drop-shadow-md">Playable</Link>
+              <nav className="space-x-6 flex items-center text-sm font-bold">
+                <Link href="/" className="text-white hover:opacity-90 px-3 py-1 rounded-lg hover:bg-white/20 transition-all">Anasayfa</Link>
+                <ThemeSelector />
+                {userEmail && (
+                  <>
+                    <Link href="/products" className="text-white hover:opacity-90 font-bold text-sm px-3 py-1 rounded-lg hover:bg-white/20 transition-all">Ürünler</Link>
+                    <Link href="/cart" className="text-white hover:opacity-90 font-bold text-sm relative px-3 py-1 rounded-lg hover:bg-white/20 transition-all">
+                      Sepet
+                      {cartCount > 0 && (
+                        <span className={`absolute -top-1 -right-1 bg-${colors.primaryDark} text-white text-xs rounded-full w-6 h-6 flex items-center justify-center font-bold border-2 border-white`}>{cartCount}</span>
+                      )}
+                    </Link>
+                    <Link href="/profile" className="text-white hover:opacity-90 font-bold text-sm px-3 py-1 rounded-lg hover:bg-white/20 transition-all">Profil</Link>
+                    {isAdmin && (
+                      <>
+                        <Link href="/admin/dashboard" className="text-white hover:opacity-90 font-bold text-sm px-3 py-1 rounded-lg hover:bg-white/20 transition-all">Admin Dashboard</Link>
+                      </>
+                    )}
+                  </>
+                )}
+                {userEmail ? (
+                  <>
+                    <span className="ml-4 text-sm text-white font-semibold bg-white/20 px-3 py-1 rounded-lg">{userEmail}</span>
+                    <button onClick={handleLogout} className={`ml-4 px-5 py-2 text-sm font-bold text-${colors.primaryDark} bg-white rounded-full hover:opacity-90 shadow-md transition-all`}>Çıkış</button>
+                  </>
+                ) : (
+                  <>
+                    <Link href="/login" className="text-white hover:opacity-90 font-bold text-sm px-4 py-2 rounded-lg hover:bg-white/20 transition-all">Giriş</Link>
+                    <Link href="/register" className={`ml-2 px-5 py-2 text-sm font-bold text-${colors.primaryDark} bg-white rounded-full hover:opacity-90 shadow-md transition-all`}>Kayıt Ol</Link>
+                  </>
+                )}
+              </nav>
+            </div>
+          </header>
+        )}
+        {/* Compact admin topbar for admin routes */}
+        {router.pathname.startsWith('/admin') && (
+          <div className="bg-white border-b shadow-sm sticky top-0 z-40">
+            <div className="max-w-7xl mx-auto px-6 py-3 flex items-center gap-3">
+              <button onClick={() => { if (typeof window !== 'undefined' && window.history.length > 1) router.back(); else router.push('/admin/dashboard'); }} className="flex items-center gap-2 px-3 py-1 bg-gray-100 hover:bg-gray-200 text-sm text-gray-800 rounded">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M7.707 14.707a1 1 0 01-1.414 0L2.586 11a1 1 0 010-1.414l3.707-3.707a1 1 0 011.414 1.414L6.414 10l1.293 1.293a1 1 0 010 1.414z" clipRule="evenodd"/></svg>
+                Geri
+              </button>
+              <button onClick={() => router.push('/admin/dashboard')} className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded">Dashboard</button>
+              <div className="ml-4 font-semibold text-sm">Admin Panel</div>
+            </div>
+          </div>
+        )}
+      <main className={`min-h-screen ${router.pathname.startsWith('/admin') ? '' : 'md:ml-64'}`}>{children}</main>
       <footer className={`border-t-4 border-${colors.accent} bg-${colors.primaryLight} mt-24 py-12 shadow-xl`}>
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
@@ -197,8 +217,8 @@ export default function Layout({ children, title = 'Playable' }: any) {
           </div>
         </div>
       </footer>
-      {/* Left-side ad carousel (Casper concept) */}
-      <AdCarousel />
+      {/* Left-side ad carousel (Casper concept) - hide on admin routes */}
+      {!router.pathname.startsWith('/admin') && <AdCarousel />}
     </div>
   );
 }

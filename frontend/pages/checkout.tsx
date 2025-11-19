@@ -46,19 +46,22 @@ export default function CheckoutPage() {
     [subTotal, taxTotal, shippingFee]
   );
   const formatCurrency = (value: number) => currencyFormatter.format(value || 0);
-
   useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const token =
-      localStorage.getItem("token") || localStorage.getItem("userEmail");
-    if (!token) router.replace("/login");
-
-    const rawCart = localStorage.getItem("cart");
+    if (typeof window === 'undefined') return;
+    const rawCart = localStorage.getItem('cart');
     if (rawCart) {
       const items = JSON.parse(rawCart);
       setCart(items);
     }
+  }, []);
+
+  const [guestEmail, setGuestEmail] = useState('');
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const token = localStorage.getItem('token');
+    setIsLoggedIn(!!token);
   }, []);
 
   const handleSubmit = async (e: any) => {
@@ -81,46 +84,46 @@ export default function CheckoutPage() {
 
     setLoading(true);
     try {
-      const token = localStorage.getItem("token");
-
-      await api.post(
-        "/orders",
-        {
-          items: cart.map((item) => ({
-            productId: item.id,
-            quantity: item.qty,
-          })),
-          shippingAddress: { fullName, city, address, phone, notes },
-          paymentInfo: {
-            cardName,
-            cardNumber: "**** **** **** " + cardNumber.slice(-4),
-            expiry,
-          },
+      const token = localStorage.getItem('token');
+      const body: any = {
+        items: cart.map((item) => ({ productId: item.id, quantity: item.qty })),
+        shippingAddress: { fullName, city, address, phone, notes },
+        paymentInfo: {
+          cardName,
+          cardNumber: '**** **** **** ' + cardNumber.slice(-4),
+          expiry,
         },
-        {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
+      };
+      if (!token) {
+        if (!guestEmail || !guestEmail.includes('@')) {
+          setMessage('Giriş yapmadıysanız lütfen e‑posta girin');
+          setLoading(false);
+          return;
         }
-      );
+        body.guestEmail = guestEmail;
+      }
 
-      setMessage("Sipariş oluşturuldu! Profil sayfanızdan siparişi takip edebilirsiniz.");
-      localStorage.removeItem("cart");
+      await api.post('/orders', body, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+
+      setMessage(isLoggedIn ? 'Sipariş oluşturuldu! Profil sayfanızdan siparişi takip edebilirsiniz.' : 'Sipariş oluşturuldu! Teşekkürler.');
+      localStorage.removeItem('cart');
 
       try {
-        window.dispatchEvent(new CustomEvent("cartUpdated", { detail: [] }));
+        window.dispatchEvent(new CustomEvent('cartUpdated', { detail: [] }));
       } catch {}
 
       try {
         window.dispatchEvent(
-          new CustomEvent("notify", {
-            detail: { type: "success", message: "Sipariş başarıyla oluşturuldu!" },
+          new CustomEvent('notify', {
+            detail: { type: 'success', message: 'Sipariş başarıyla oluşturuldu!' },
           })
         );
       } catch {}
 
-      setTimeout(() => router.replace("/profile"), 800);
+      setTimeout(() => router.replace(isLoggedIn ? '/profile' : '/'), 800);
     } catch (err) {
       console.error(err);
-      setMessage("Sipariş oluşturulamadı");
+      setMessage('Sipariş oluşturulamadı');
     }
     setLoading(false);
   };

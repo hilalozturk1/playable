@@ -1,6 +1,8 @@
 import { Router } from 'express';
+import jwt from 'jsonwebtoken';
 import Order from '../models/order';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
+import { cacheDel } from '../lib/cache';
 import { Product } from '../models/product';
 
 const parseNumber = (value: string | undefined, fallback: number) => {
@@ -14,14 +16,30 @@ const FREE_SHIPPING_LIMIT = parseNumber(process.env.ORDER_FREE_SHIPPING_MIN, 750
 
 const router = Router();
 
-// Create order (private)
-router.post('/', authMiddleware, async (req: AuthRequest, res) => {
-  const userId = req.user?.sub;
-  const { items = [], shippingAddress = {} } = req.body || {};
+// Create order (private or guest)
+router.post('/', async (req: any, res) => {
+  // try to extract userId from Authorization header if present
+  let userId: any = undefined;
+  try {
+    const auth = (req.headers && req.headers.authorization) || '';
+    if (auth && auth.startsWith('Bearer ')) {
+      const token = auth.slice(7);
+      const payload: any = jwt.verify(token, process.env.JWT_SECRET || 'secret');
+      userId = payload.sub;
+    }
+  } catch (e) {
+    // ignore token errors, we'll allow guest checkout below
+  }
 
-  if (!userId) return res.status(401).json({ message: 'Missing user' });
+  const { items = [], shippingAddress = {}, guestEmail } = req.body || {};
+
   if (!Array.isArray(items) || items.length === 0) {
     return res.status(400).json({ message: 'Sipariş için en az bir ürün gerekli' });
+  }
+
+  // if no userId (guest), require guestEmail
+  if (!userId && !guestEmail) {
+    return res.status(400).json({ message: 'Giriş yapılmadıysa guestEmail gerekli' });
   }
 
   try {
@@ -72,8 +90,7 @@ router.post('/', authMiddleware, async (req: AuthRequest, res) => {
     const estimatedDelivery = new Date();
     estimatedDelivery.setDate(estimatedDelivery.getDate() + 5);
 
-    const order = await Order.create({
-      userId,
+    const orderData: any = {
       items: orderItems,
       subTotal,
       taxTotal,
@@ -82,15 +99,33 @@ router.post('/', authMiddleware, async (req: AuthRequest, res) => {
       shippingAddress,
       status: 'Hazırlanıyor',
       estimatedDelivery,
-    });
+    };
+    if (userId) orderData.userId = userId;
+    else orderData.guestEmail = guestEmail;
 
+    const order = await Order.create(orderData);
+
+    // decrement stock, increment ordersCount and deactivate when stock reaches 0
     await Promise.all(
-      orderItems.map(item =>
-        Product.findByIdAndUpdate(item.productId, {
-          $inc: { stock: -item.quantity, ordersCount: item.quantity },
-        })
-      )
+      orderItems.map(async item => {
+        const updated = await Product.findByIdAndUpdate(
+          item.productId,
+          { $inc: { stock: -item.quantity, ordersCount: item.quantity } },
+          { new: true }
+        );
+        if (updated && updated.stock <= 0 && updated.isActive) {
+          // mark inactive when stock depleted
+          await Product.findByIdAndUpdate(updated._id, { isActive: false });
+        }
+      })
     );
+
+    // invalidate dashboard caches (best-effort)
+    try {
+      await cacheDel('dashboard:stats');
+      await cacheDel('dashboard:popular-products');
+      await cacheDel('dashboard:recent-orders');
+    } catch (e) {}
 
     res.json(order);
   } catch (err: any) {
