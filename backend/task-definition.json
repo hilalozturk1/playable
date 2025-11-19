@@ -1,0 +1,29 @@
+{
+  "family": "playable-backend",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "executionRoleArn": "arn:aws:iam::REPLACE_WITH_ACCOUNT:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::REPLACE_WITH_ACCOUNT:role/ecsTaskRole",
+  "containerDefinitions": [
+    {
+      "name": "playable-backend",
+      "image": "REPLACE_WITH_BACKEND_IMAGE",
+      "essential": true,
+      "portMappings": [{ "containerPort": 4000, "protocol": "tcp" }],
+      "environment": [
+        { "name": "NODE_ENV", "value": "production" },
+        { "name": "PORT", "value": "4000" }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/playable-backend",
+          "awslogs-region": "REPLACE_WITH_REGION",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ]
+}
